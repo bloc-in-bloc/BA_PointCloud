@@ -14,13 +14,15 @@ namespace BAPointCloudRenderer.ObjectCreation
         /// </summary>
         public bool displayLOD = false;
 
-        private Material material;
+        public Material material;
         private HashSet<GameObject> gameObjectCollection = null;
 
         public void Start()
         {
-            material = new Material(Shader.Find("Custom/PointShader"));
-            material.enableInstancing = true;
+            if (material == null) {
+                material = new Material(Shader.Find("Custom/PointShader"));
+                material.enableInstancing = true;
+            }
             gameObjectCollection = new HashSet<GameObject>();
         }
 
