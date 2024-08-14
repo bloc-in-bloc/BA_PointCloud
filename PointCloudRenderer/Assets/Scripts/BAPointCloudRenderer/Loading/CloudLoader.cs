@@ -321,14 +321,10 @@ namespace BAPointCloudRenderer.Loading {
             } else {
                 data = FindAndLoadFile (dataRPath, metaData, node.Name, ".bin");
             }
+            bool isBrotliEncoding = metaData is PointCloudMetaDataV2_0 metaDataV2 && metaDataV2.encoding == "BROTLI";
             int pointByteSize = metaData.pointByteSize;
-            int numPoints = data.Length / pointByteSize;
+            int numPoints = isBrotliEncoding ? (int)node.numPoints : data.Length / pointByteSize;
             int offset = 0, toSetOff = 0;
-            bool isBrotliEncoding = false;
-
-            if (metaData is PointCloudMetaDataV2_0 metaDataV2) {
-                isBrotliEncoding = metaDataV2.encoding == "BROTLI";
-            }
             
             if (isBrotliEncoding) {
                 using (var compressedStream = new MemoryStream (data)) {
@@ -353,6 +349,8 @@ namespace BAPointCloudRenderer.Loading {
                             uint mc_1 = System.BitConverter.ToUInt32 (data, toSetOff + 0);
                             uint mc_2 = System.BitConverter.ToUInt32 (data, toSetOff + 12);
                             uint mc_3 = System.BitConverter.ToUInt32 (data, toSetOff + 8);
+                            
+                            toSetOff += 16;
 
                             uint X = dealign24b ((mc_3 & 0x00FFFFFF) >> 0)
                                    | (dealign24b (((mc_3 >> 24) | (mc_2 << 8)) >> 0) << 8);
@@ -382,7 +380,6 @@ namespace BAPointCloudRenderer.Loading {
 
                             vertices[i] = new Vector3 (x, y, z);
                         }
-                        toSetOff += 16;
                     } else {
                         for (int i = 0; i < numPoints; i++) {
                             //Reduction to single precision!
@@ -418,6 +415,12 @@ namespace BAPointCloudRenderer.Loading {
                             colors[i] = new Color32(r, g, b, a);
                         }
                         toSetOff += 4;
+                    }
+                } else {
+                    if (isBrotliEncoding) {
+                        for (int j = 0; j < numPoints; j++) {
+                            toSetOff += (pointAttribute as PointAttributeV2_0).byteSize;
+                        }
                     }
                 }
                 /*
