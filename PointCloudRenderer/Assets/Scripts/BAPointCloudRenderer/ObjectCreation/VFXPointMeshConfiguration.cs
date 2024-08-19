@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using BAPointCloudRenderer.CloudController;
 using BAPointCloudRenderer.CloudData;
 using Cysharp.Threading.Tasks;
@@ -11,7 +9,7 @@ using UnityEngine.VFX;
 namespace BAPointCloudRenderer.ObjectCreation {
     // Inspired by : https://www.youtube.com/watch?v=P5BgrdXis68&t=425s
     public class VFXPointMeshConfiguration : MeshConfiguration {
-        public VisualEffect visualEffect;
+        public VisualEffect visualEffectPrefab;
         public VFXPointMesh vfxPointMeshPrefab;
         public uint resolution = 2048;
         public float particleSize = 0.1f;
@@ -19,6 +17,7 @@ namespace BAPointCloudRenderer.ObjectCreation {
         private static List<VFXPointMesh> _allVFXPointMesh;
         private bool _updatePointCloud = false;
         private bool isReady = true;
+        private VisualEffect _currentVisualEffect;
 
         public void Start () {
             _allVFXPointMesh = new List<VFXPointMesh> ();
@@ -79,25 +78,22 @@ namespace BAPointCloudRenderer.ObjectCreation {
 
         private async void SetParticles () {
             int totalNumberOfPoints = _allVFXPointMesh.Sum ((holder => holder.numberOfPoints));
-            
-            Texture2D texColor = new Texture2D (totalNumberOfPoints > (int) resolution ? (int) resolution : totalNumberOfPoints, 
+
+            Texture2D texColor = new Texture2D (totalNumberOfPoints > (int) resolution ? (int) resolution : totalNumberOfPoints,
                 Mathf.Clamp (totalNumberOfPoints / (int) resolution, 1, (int) resolution),
                 TextureFormat.RGBAFloat,
                 false);
-            
+
             Texture2D texPosScale = new Texture2D (totalNumberOfPoints > (int) resolution ? (int) resolution : totalNumberOfPoints,
                 Mathf.Clamp (totalNumberOfPoints / (int) resolution, 1, (int) resolution),
                 TextureFormat.RGBAFloat,
                 false);
-            
-            int texWidth = texColor.width;
-            int texHeight = texColor.height;
-            
+
             List<Color> positions = new List<Color> (totalNumberOfPoints);
             List<Color> colors = new List<Color> (totalNumberOfPoints);
 
             foreach (VFXPointMesh mesh in _allVFXPointMesh) {
-                positions.AddRange (mesh.positions.Select (p =>  new Color (p.x, p.y, p.z, particleSize)));
+                positions.AddRange (mesh.positions.Select (p => new Color (p.x, p.y, p.z, particleSize)));
                 colors.AddRange (mesh.colors);
             }
 
@@ -109,12 +105,20 @@ namespace BAPointCloudRenderer.ObjectCreation {
 
             uint particleCount = (uint) totalNumberOfPoints;
 
-
+            VisualEffect visualEffect = GameObject.Instantiate (visualEffectPrefab);
             visualEffect.Reinit ();
             visualEffect.SetUInt (Shader.PropertyToID ("ParticleCount"), particleCount);
             visualEffect.SetTexture (Shader.PropertyToID ("TexColor"), texColor);
             visualEffect.SetTexture (Shader.PropertyToID ("TexPosScale"), texPosScale);
             visualEffect.SetUInt (Shader.PropertyToID ("Resolution"), resolution);
+            
+            // Prevent visual effect flickering
+            await UniTask.WaitForSeconds (0.1f);
+
+            if (_currentVisualEffect != null) {
+                GameObject.DestroyImmediate (_currentVisualEffect.gameObject);
+            }
+            _currentVisualEffect = visualEffect;
         }
     }
 }
