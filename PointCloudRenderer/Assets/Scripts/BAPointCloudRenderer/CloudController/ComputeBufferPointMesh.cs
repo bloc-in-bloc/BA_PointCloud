@@ -9,11 +9,6 @@ namespace BAPointCloudRenderer.CloudController {
         private ComputeBuffer _colorsbuffer;
         private Material _material;
         private int _nbPoints = 0;
-        
-        private void OnDestroy () {
-            _pointsbuffer.Dispose ();
-            _colorsbuffer.Dispose ();
-        }
 
         public void Init (Shader shader, Vector3[] vertexData, Color[] colorData) {
             if (_pointsbuffer == null && _colorsbuffer == null) {

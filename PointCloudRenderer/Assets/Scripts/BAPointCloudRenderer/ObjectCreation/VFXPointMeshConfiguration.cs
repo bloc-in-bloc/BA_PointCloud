@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using BAPointCloudRenderer.CloudController;
 using BAPointCloudRenderer.CloudData;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -14,14 +16,16 @@ namespace BAPointCloudRenderer.ObjectCreation {
         public uint resolution = 2048;
         public float particleSize = 0.1f;
 
-        private static HashSet<VFXPointMesh> _allVFXPointMesh;
+        private static List<VFXPointMesh> _allVFXPointMesh;
         private bool _updatePointCloud = false;
+        private bool isReady = true;
 
         public void Start () {
-            _allVFXPointMesh = new HashSet<VFXPointMesh> ();
+            _allVFXPointMesh = new List<VFXPointMesh> ();
+            InvokeRepeating ("CheckUpdatePointCloud", 1f, 1f);
         }
 
-        public void FixedUpdate () {
+        public void CheckUpdatePointCloud () {
             if (_updatePointCloud) {
                 UpdateParticles ();
                 _updatePointCloud = false;
@@ -70,31 +74,41 @@ namespace BAPointCloudRenderer.ObjectCreation {
         }
 
         private void UpdateParticles () {
-            Vector3[] positions = _allVFXPointMesh.SelectMany (pm => pm.positions.Select (p => pm.transform.TransformPoint (p))).ToArray ();
-            Color[] colors = _allVFXPointMesh.SelectMany (pm => pm.colors).ToArray ();
-            SetParticles (positions, colors);
+            SetParticles ();
         }
 
-        private void SetParticles (Vector3[] positions, Color[] colors) {
-            Texture2D texColor = new Texture2D (positions.Length > (int) resolution ? (int) resolution : positions.Length, Mathf.Clamp (positions.Length / (int) resolution, 1, (int) resolution), TextureFormat.RGBAFloat, false);
-            Texture2D texPosScale = new Texture2D (positions.Length > (int) resolution ? (int) resolution : positions.Length, Mathf.Clamp (positions.Length / (int) resolution, 1, (int) resolution), TextureFormat.RGBAFloat, false);
-
+        private async void SetParticles () {
+            int totalNumberOfPoints = _allVFXPointMesh.Sum ((holder => holder.numberOfPoints));
+            
+            Texture2D texColor = new Texture2D (totalNumberOfPoints > (int) resolution ? (int) resolution : totalNumberOfPoints, 
+                Mathf.Clamp (totalNumberOfPoints / (int) resolution, 1, (int) resolution),
+                TextureFormat.RGBAFloat,
+                false);
+            
+            Texture2D texPosScale = new Texture2D (totalNumberOfPoints > (int) resolution ? (int) resolution : totalNumberOfPoints,
+                Mathf.Clamp (totalNumberOfPoints / (int) resolution, 1, (int) resolution),
+                TextureFormat.RGBAFloat,
+                false);
+            
             int texWidth = texColor.width;
             int texHeight = texColor.height;
+            
+            List<Color> positions = new List<Color> (totalNumberOfPoints);
+            List<Color> colors = new List<Color> (totalNumberOfPoints);
 
-            for (int y = 0; y < texHeight; y++) {
-                for (int x = 0; x < texWidth; x++) {
-                    int index = x + y * texWidth;
-                    texColor.SetPixel (x, y, colors[index]);
-                    var data = new Color (positions[index].x, positions[index].y, positions[index].z, particleSize);
-                    texPosScale.SetPixel (x, y, data);
-                }
+            foreach (VFXPointMesh mesh in _allVFXPointMesh) {
+                positions.AddRange (mesh.positions.Select (p =>  new Color (p.x, p.y, p.z, particleSize)));
+                colors.AddRange (mesh.colors);
             }
+
+            texPosScale.SetPixels (positions.ToArray ());
+            texColor.SetPixels (colors.ToArray ());
 
             texColor.Apply ();
             texPosScale.Apply ();
 
-            uint particleCount = (uint) positions.Length;
+            uint particleCount = (uint) totalNumberOfPoints;
+
 
             visualEffect.Reinit ();
             visualEffect.SetUInt (Shader.PropertyToID ("ParticleCount"), particleCount);
