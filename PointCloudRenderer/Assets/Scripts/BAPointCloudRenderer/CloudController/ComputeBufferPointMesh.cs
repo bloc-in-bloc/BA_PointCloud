@@ -1,6 +1,7 @@
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace BAPointCloudRenderer.CloudController {
     public class ComputeBufferPointMesh : MonoBehaviour {
@@ -31,6 +32,8 @@ namespace BAPointCloudRenderer.CloudController {
 
             _nbPoints = vertexData.Length;
             int nbColors = colorData.Length;
+            
+       
 
             var vertices = new NativeArray<float3> (_nbPoints, Allocator.Temp);
             var colors = new NativeArray<uint> (nbColors, Allocator.Temp);
@@ -58,6 +61,11 @@ namespace BAPointCloudRenderer.CloudController {
             }
             _material.SetPass (0);
             Graphics.DrawProceduralNow (MeshTopology.Points, _nbPoints);
+        }
+        
+        private void OnDestroy () {
+            _pointsbuffer.Dispose ();
+            _colorsbuffer.Dispose ();
         }
 
         static uint EncodeColor (Color c) {
