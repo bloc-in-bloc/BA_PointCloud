@@ -450,15 +450,15 @@ namespace BAPointCloudRenderer.Loading {
             }
             node.SetPoints(vertices, colors);
         }
-        private static void CalculateRGBA(ref Color[] colors, ref int offset, ref int toSetOff, byte[] data, int pointByteSize, int numPoints, bool alpha, bool isBrotliCompressed)
+        private static void CalculateRGBA(ref Color[] colors, ref int offset, ref int toSetOff, byte[] data, int pointByteSize, int numPoints, bool alpha, bool isBrotliEncoding)
         {
             int size = alpha ? 4 : 3;
 
             for (int j = 0; j < numPoints; j++)
             {
-                if (isBrotliCompressed) {
-                    uint mc_0 = System.BitConverter.ToUInt32 (data, offset + 4);
-                    uint mc_1 = System.BitConverter.ToUInt32 (data, offset + 0);
+                if (isBrotliEncoding) {
+                    uint mc_0 = System.BitConverter.ToUInt32 (data, offset + toSetOff + 4);
+                    uint mc_1 = System.BitConverter.ToUInt32 (data, offset + toSetOff + 0);
                     toSetOff += 8;
                     
                     uint r = dealign24b((mc_1 & 0x00FFFFFF) >> 0)
