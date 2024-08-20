@@ -49,7 +49,7 @@ namespace BAPointCloudRenderer.ObjectCreation {
                 go.transform.SetParent (parent, false);
             }
 
-            vfxPointMesh.Init (vertexData, colorData);
+            vfxPointMesh.Init (vertexData, colorData, particleSize);
 
             go.AddComponent<BoundingBoxComponent> ().boundingBox = boundingBox;
 
@@ -93,7 +93,7 @@ namespace BAPointCloudRenderer.ObjectCreation {
             List<Color> colors = new List<Color> (totalNumberOfPoints);
 
             foreach (VFXPointMesh mesh in _allVFXPointMesh) {
-                positions.AddRange (mesh.positions.Select (p => new Color (p.x, p.y, p.z, particleSize)));
+                positions.AddRange (mesh.positionsAsColor);
                 colors.AddRange (mesh.colors);
             }
 
@@ -111,7 +111,7 @@ namespace BAPointCloudRenderer.ObjectCreation {
             visualEffect.SetTexture (Shader.PropertyToID ("TexColor"), texColor);
             visualEffect.SetTexture (Shader.PropertyToID ("TexPosScale"), texPosScale);
             visualEffect.SetUInt (Shader.PropertyToID ("Resolution"), resolution);
-            
+
             // Prevent visual effect flickering
             await UniTask.WaitForSeconds (0.1f);
 
