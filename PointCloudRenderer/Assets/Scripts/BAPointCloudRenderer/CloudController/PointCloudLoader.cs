@@ -12,11 +12,12 @@ namespace BAPointCloudRenderer.CloudController {
     /// Streaming Assets support provided by Pablo Vidaurre
     /// </summary>
     public class PointCloudLoader : MonoBehaviour {
-
         /// <summary>
         /// Path to the folder which contains the cloud.js file or URL to download the cloud from. In the latter case, it will be downloaded to a /temp folder
         /// </summary>
         public string cloudPath;
+
+        public bool isCloudOnline = false;
 
         /// <summary>
         /// When true, the cloudPath is relative to the streaming assets directory
@@ -35,52 +36,49 @@ namespace BAPointCloudRenderer.CloudController {
 
         private Node rootNode;
 
-        private void Awake()
-        {
+        private void Awake () {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            BetterStreamingAssets.Initialize ();
+#else
             if (streamingAssetsAsRoot) cloudPath = Application.streamingAssetsPath + "/" + cloudPath;
+#endif
         }
 
-        void Start() {
+        void Start () {
             if (loadOnStart) {
-                LoadPointCloud();
+                LoadPointCloud ();
             }
         }
 
-        private void LoadHierarchy() {
+        private void LoadHierarchy () {
             try {
-                PointCloudMetaData metaData = CloudLoader.LoadMetaData(cloudPath, false);
-                
-                setController.UpdateBoundingBox(this, metaData.boundingBox_transformed, metaData.tightBoundingBox_transformed);
+                PointCloudMetaData metaData = CloudLoader.LoadMetaData (cloudPath, isCloudOnline, streamingAssetsAsRoot, false);
 
-                rootNode = CloudLoader.LoadHierarchyOnly(metaData);
+                setController.UpdateBoundingBox (this, metaData.boundingBox_transformed, metaData.tightBoundingBox_transformed);
 
-                setController.AddRootNode(this, rootNode, metaData);
-                
-            } catch (System.IO.FileNotFoundException ex)
-            {
-                Debug.LogError("Could not find file: " + ex.FileName);
-            } catch (System.IO.DirectoryNotFoundException ex)
-            {
-                Debug.LogError("Could not find directory: " + ex.Message);
-            } catch (System.Net.WebException ex)
-            {
-                Debug.LogError("Could not access web address. " + ex.Message);
-            }
-            catch (Exception ex) {
-                Debug.LogError(ex + Thread.CurrentThread.Name);
+                rootNode = CloudLoader.LoadHierarchyOnly (metaData);
+
+                setController.AddRootNode (this, rootNode, metaData);
+            } catch (System.IO.FileNotFoundException ex) {
+                Debug.LogError ("Could not find file: " + ex.FileName);
+            } catch (System.IO.DirectoryNotFoundException ex) {
+                Debug.LogError ("Could not find directory: " + ex.Message);
+            } catch (System.Net.WebException ex) {
+                Debug.LogError ("Could not access web address. " + ex.Message);
+            } catch (Exception ex) {
+                Debug.LogError (ex + Thread.CurrentThread.Name);
             }
         }
 
         /// <summary>
         /// Starts loading the point cloud. When the hierarchy is loaded it is registered at the corresponding point cloud set
         /// </summary>
-        public void LoadPointCloud() {
-            if (rootNode == null && setController != null && cloudPath != null)
-            {
-                setController.RegisterController(this);
-                Thread thread = new Thread(LoadHierarchy);
+        public void LoadPointCloud () {
+            if (rootNode == null && setController != null && cloudPath != null) {
+                setController.RegisterController (this);
+                Thread thread = new Thread (LoadHierarchy);
                 thread.Name = "Loader for " + cloudPath;
-                thread.Start();
+                thread.Start ();
             }
         }
 
@@ -88,14 +86,13 @@ namespace BAPointCloudRenderer.CloudController {
         /// Removes the point cloud from the scene. Should only be called from the main thread!
         /// </summary>
         /// <returns>True if the cloud was removed. False, when the cloud hasn't even been loaded yet.</returns>
-        public bool RemovePointCloud() {
+        public bool RemovePointCloud () {
             if (rootNode == null) {
                 return false;
             }
-            setController.RemoveRootNode(this, rootNode);
+            setController.RemoveRootNode (this, rootNode);
             rootNode = null;
             return true;
         }
-
     }
 }
