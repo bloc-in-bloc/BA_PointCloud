@@ -3,6 +3,13 @@ PointCloud-BachelorThesis
 
 Project files for my bachelor thesis on rendering large point clouds in Unity.
 
+## State of the art for mobile point cloud rendering 
+
+- Render point as quad (it cost 4x vertices to render a large point cloud)
+- Render point by mesh with custom shader (lot of draw calls, difficult to do some static batching)
+- Render point with ComputeBuffer and DrawDirect unity API (didn't work on Android Mali GPU, can't change shape of points)
+- Render point with Unity basic particule system (use lot of CPU, difficul to render 1 million points)
+- Render point with new Unity VFX System (use GPU so it can render many million points easily, we can change shape of points, didn't work on Android Mali GPU without Vulkan enable)
 
 ## Range request
 
