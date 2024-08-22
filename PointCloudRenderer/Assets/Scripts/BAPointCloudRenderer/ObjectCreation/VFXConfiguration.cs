@@ -8,9 +8,8 @@ using UnityEngine.VFX;
 
 namespace BAPointCloudRenderer.ObjectCreation {
     // Inspired by : https://www.youtube.com/watch?v=P5BgrdXis68&t=425s
-    public class VFXPointMeshConfiguration : MeshConfiguration {
+    public class VFXConfiguration : MeshConfiguration {
         public VisualEffect visualEffectPrefab;
-        public VFXPointMesh vfxPointMeshPrefab;
         public uint resolution = 2048;
         public float particleSize = 0.1f;
 
@@ -32,9 +31,8 @@ namespace BAPointCloudRenderer.ObjectCreation {
         }
 
         public override GameObject CreateGameObject (string name, Vector3[] vertexData, Color[] colorData, BoundingBox boundingBox, Transform parent, string version, Vector3d translationV2) {
-            VFXPointMesh vfxPointMesh = GameObject.Instantiate (vfxPointMeshPrefab);
-            vfxPointMesh.name = name;
-            GameObject go = vfxPointMesh.gameObject;
+            GameObject go = new GameObject (name);
+            VFXPointMesh vfxPointMesh = go.AddComponent<VFXPointMesh> ();
 
             //Set Translation
             if (version == "2.0") {
